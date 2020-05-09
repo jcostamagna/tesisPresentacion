@@ -65,11 +65,11 @@ def heatmap(AUC, title, xlabel, ylabel, xticklabels, yticklabels, figure_width=4
     # Turn off all the ticks
     ax = plt.gca()    
     for t in ax.xaxis.get_major_ticks():
-        t.tick1On = False
-        t.tick2On = False
+        t.tick1line.set_visible(False)
+        t.tick2line.set_visible(False)
     for t in ax.yaxis.get_major_ticks():
-        t.tick1On = False
-        t.tick2On = False
+        t.tick1line.set_visible(False)
+        t.tick2line.set_visible(False)
 
     # Add color bar
     plt.colorbar(c)
@@ -90,24 +90,27 @@ def heatmap(AUC, title, xlabel, ylabel, xticklabels, yticklabels, figure_width=4
 
 
 
-def plot_classification_report(classification_report, title='Classification report ', cmap='RdYlGn'):
+def plot_classification_report(classification_report, number_of_classes=2, title='Classification report ', cmap='RdYlGn'):
     '''
     Plot scikit-learn classification report.
     Extension based on https://stackoverflow.com/a/31689645/395857 
     '''
     lines = classification_report.split('\n')
+    
+    #drop initial lines
+    lines = lines[2:]
 
     classes = []
     plotMat = []
     support = []
     class_names = []
-    for line in lines[2 : (len(lines) - 2)]:
-        t = line.strip().split()
-        if len(t) < 2: continue
-        classes.append(t[0]+" "+t[1])
-        v = [float(x) for x in t[2: len(t) - 1]]
+    for line in lines[: number_of_classes]:
+        t = list(filter(None, line.strip().split('  ')))
+        if len(t) < 4: continue
+        classes.append(t[0])
+        v = [float(x) for x in t[1: len(t) - 1]]
         support.append(int(t[-1]))
-        class_names.append(t[0]+" "+t[1])
+        class_names.append(t[0])
         plotMat.append(v)
 
 
@@ -119,4 +122,67 @@ def plot_classification_report(classification_report, title='Classification repo
     figure_height = len(class_names) + 3
     correct_orientation = True
     heatmap(np.array(plotMat), title, xlabel, ylabel, xticklabels, yticklabels, figure_width, figure_height, correct_orientation, cmap=cmap)
+    plt.show()
+
+def plot_classification_report_means(means_cr, title='Classification report ', cmap='RdYlGn'):
+    xlabel = 'Metrics'
+    ylabel = 'Classes'
+    xticklabels = ['Precision', 'Recall', 'F1-score']
+    yticklabels = ['No Hit', 'Hit']
+    figure_width = 10
+    figure_height = 5
+    correct_orientation = True
+    heatmap(np.array(means_cr), title, xlabel, ylabel, xticklabels, yticklabels, figure_width, figure_height, correct_orientation, cmap=cmap)
+    plt.show()
+
+from IPython.core.display import display, Markdown
+
+def print_header(header):
+    raw_html = "<h3>"+header+"</h3>"
+    display( Markdown(raw_html) )
+
+def plot_confusion_matrix(matrix):
+
+    ax1 = pie_plot(1, 'No Hits predictions', matrix[0], ['g','r'], ['No Hit', 'Hit'])
+    ax2 = pie_plot(2, 'Hits predictions recall', [matrix[1][1], matrix[1][0]], ['g','r'], ['Hit', 'No Hit'])
+
+    plt.show()
+    
+def pie_plot(i, title, sizes, colors, labels):
+    ax1 = plt.subplot(2,2,i)
+
+    ax1.set_title(title)
+    ax1.pie(sizes, explode=(0, 0.1), labels=labels, autopct='%1.1f%%',
+            shadow=True, startangle=90, colors=colors)
+    
+    ax1.axis('equal')
+    return ax1
+
+from sklearn import metrics
+import pandas as pd
+from matplotlib import gridspec
+
+
+def plot_average_result(total_acc, no_hit_prec, no_hit_rec, hit_prec, hit_rec):
+    data = {'No hit precision': no_hit_prec,
+            'No hit recall': no_hit_rec, 
+            'Hit precision': hit_prec, 
+            'Hit recall': hit_rec}
+    
+    df = pd.DataFrame(data)
+    data2 = {'Total Accuracy Average': total_acc}
+    df2 = pd.DataFrame(data2)
+    
+    fig = plt.figure(figsize=(7, 5)) 
+    gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+    ax0 = plt.subplot(gs[0])
+    ax0.set_ylim([0, 1])
+    ax0.set_yticks(np.linspace(0,1,11))
+    ax0.set_title("Average of experiments")
+    df.boxplot(ax=ax0)
+    ax1 = plt.subplot(gs[1])
+    ax1.set_ylim([0, 100])
+    ax1.set_yticks(np.arange(0, 110, 10))
+    df2.boxplot(ax=ax1)
+    plt.tight_layout()
     plt.show()
