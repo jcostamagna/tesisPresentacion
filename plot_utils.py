@@ -141,10 +141,24 @@ def print_header(header):
     raw_html = "<h3>"+header+"</h3>"
     display( Markdown(raw_html) )
 
+def print_result(result, median = 0, variable= "Cohen's kappa coefficient", symbol=''):
+    symbol += ' '
+    if (result > median):
+        raw_html = variable + ' is <span style="color:green">'+ symbol + '+' + str(round(result - median, 2)) + '</span> above the baseline. \t <span style="color:green">✓</span>'
+    if (result < median ):
+        raw_html = variable + ' is <span style="color:red">'+ symbol + str(round(result - median, 2)) +'</span> below the baseline.'
+    if (result == median ):
+        raw_html = variable + ' is same as the baseline: '+ symbol + str(result) 
+    
+    display( Markdown(raw_html) )
+
+
 def plot_confusion_matrix(matrix):
 
-    ax1 = pie_plot(1, 'No Hits predictions', matrix[0], ['g','r'], ['No Hit', 'Hit'])
+    ax1 = pie_plot(1, 'No Hits predictions recall', matrix[0], ['g','r'], ['No Hit', 'Hit'])
     ax2 = pie_plot(2, 'Hits predictions recall', [matrix[1][1], matrix[1][0]], ['g','r'], ['Hit', 'No Hit'])
+    
+    ax1.text(-2, -2, "From all No Hits cases % {0} were predicted correctly, and from all Hits cases % {1} were predicted correctly".format(round(matrix[0][0]*100, 2), round(matrix[1][1]*100, 2)))
 
     plt.show()
     
